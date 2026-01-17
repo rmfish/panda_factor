@@ -21,10 +21,12 @@ panda_common/**/*.py[cod]
 **/*$py.class
 *.so
 .Python
+.venv/
 env/
 logs/
 build/
 dist_bundle/
+data/
 develop-eggs/
 dist/
 downloads/

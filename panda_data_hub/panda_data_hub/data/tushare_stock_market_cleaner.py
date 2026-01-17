@@ -8,7 +8,7 @@ from panda_common.handlers.database_handler import DatabaseHandler
 from panda_common.logger_config import logger
 from panda_common.utils.stock_utils import get_exchange_suffix
 from panda_data_hub.utils.mongo_utils import ensure_collection_and_indexes
-from panda_data_hub.utils.ts_utils import calculate_upper_limit, calculate_lower_limit
+from panda_data_hub.utils.ts_utils import calculate_upper_limit, calculate_lower_limit, ts_query
 
 
 class TSStockMarketCleaner(ABC):
@@ -46,11 +46,11 @@ class TSStockMarketCleaner(ABC):
             # 根据date获取当月最后一个交易日
             mid_date,last_date = self.get_previous_month_dates(date)
             # 沪深300成分股
-            hs_300 = self.pro.query('index_weight', index_code='399300.SZ', start_date=mid_date, end_date=last_date)
+            hs_300 = ts_query('index_weight', index_code='399300.SZ', start_date=mid_date, end_date=last_date)
             # 中证500成分股
-            zz_500 = self.pro.query('index_weight', index_code='000905.SH', start_date=mid_date, end_date=last_date)
+            zz_500 = ts_query('index_weight', index_code='000905.SH', start_date=mid_date, end_date=last_date)
             # 中证1000成分股
-            zz_1000 = self.pro.query('index_weight', index_code='000852.SH', start_date=mid_date, end_date=last_date)
+            zz_1000 = ts_query('index_weight', index_code='000852.SH', start_date=mid_date, end_date=last_date)
             for idx, row in price_data.iterrows():
                 try:
                     component = self.clean_index_components(data_symbol=row['ts_code'], date=date,hs_300 =hs_300,zz_500 = zz_500,zz_1000 = zz_1000)

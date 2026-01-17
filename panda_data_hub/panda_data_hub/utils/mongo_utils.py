@@ -30,8 +30,16 @@ def ensure_collection_and_indexes(table_name):
                 background=True  # 后台创建索引，不阻塞其他数据库操作
             )
             logger.info("成功创建索引 symbol_date_idx")
-        else:
-            logger.info("索引 symbol_date_idx 已存在")
+        if 'date_idx' not in existing_indexes:
+            # 创建复合索引
+            collection.create_index(
+                [
+                    ('date', 1)
+                ],
+                name='date_idx',  # 指定索引名称
+                background=True  # 后台创建索引，不阻塞其他数据库操作
+            )
+            logger.info("成功创建索引 date_idx")
 
     except Exception as e:
         logger.error(f"创建集合或索引失败: {str(e)}")

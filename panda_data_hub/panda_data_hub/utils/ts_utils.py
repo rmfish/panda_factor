@@ -1,6 +1,9 @@
+from ast import main
 import logging
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta
+from functools import lru_cache
+import pandas as pd
 import tushare as ts
 
 # 设置日志记录器
@@ -109,18 +112,75 @@ def ts_is_trading_day(date):
     bool: 如果是交易日返回 True，否则返回 False
     """
     try:
-        # 获取指定日期的交易日历信息
-        cal_df = ts.pro_api().query('trade_cal',
-                            exchange='SSE',
-                            start_date=date.replace('-', ''),
-                            end_date=date.replace('-', ''))
-        # 检查是否有数据返回及该日期是否为交易日(is_open=1表示交易日)
+        cal_df = ts_query(
+            'trade_cal',
+            exchange='SSE',
+            start_date=date.replace('-', ''),
+            end_date=date.replace('-', '')
+        )
         if not cal_df.empty and cal_df.iloc[0]['is_open'] == 1:
             return True
         return False
     except Exception as e:
         logger.error(f"检查交易日失败 {date}: {str(e)}")
         return False
+
+def get_trading_dates(start_date,end_date):
+    """
+    获取指定日期范围内的所有交易日
+
+    参数:
+    start_date: 开始日期字符串，格式为 "YYYY-MM-DD"
+    end_date: 结束日期字符串，格式为 "YYYY-MM-DD"
+
+    返回:
+    list: 包含所有交易日日期字符串的列表
+    """
+    try:
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        if start_dt > end_dt:
+            return []
+
+        max_span_days = 6000
+        all_cal_dates = []
+        current_start = start_dt
+
+        while current_start <= end_dt:
+            current_end = min(current_start + timedelta(days=max_span_days - 1), end_dt)
+            cal_df = ts_query(
+                'trade_cal',
+                exchange='SSE',
+                start_date=current_start.strftime("%Y%m%d"),
+                end_date=current_end.strftime("%Y%m%d")
+            )
+            if cal_df is not None and not cal_df.empty:
+                chunk_dates = cal_df[cal_df['is_open'] == 1]['cal_date'].tolist()
+                all_cal_dates.extend(chunk_dates)
+
+            current_start = current_end + timedelta(days=1)
+
+        if not all_cal_dates:
+            return []
+
+        unique_sorted = sorted(set(all_cal_dates))
+        trading_dates = [datetime.strptime(d, "%Y%m%d").strftime("%Y-%m-%d") for d in unique_sorted]
+        return trading_dates
+    except Exception as e:
+        logger.error(f"获取交易日失败 {start_date} 至 {end_date}: {str(e)}")
+        return []
+
+
+@lru_cache(maxsize=1024)
+def _ts_query_cached(api_name, params_items):
+    pro = ts.pro_api()
+    params = dict(params_items)
+    return pro.query(api_name, **params)
+
+
+def ts_query(api_name, **kwargs):
+    params_items = tuple(sorted(kwargs.items()))
+    return _ts_query_cached(api_name, params_items)
 
 def get_previous_month_dates(date_str):
     """
@@ -162,3 +222,27 @@ def get_tushare_suffix(code):
         return f"{code}.BJ"  # 北京证券交易所
     else:
         return "UNKNOWN"
+
+
+def get_namechange():
+    offset = 0
+    limit = 10000
+    frames = []
+    while True:
+        df = ts_query('namechange',limit=limit, offset=offset)
+        if df is None or df.empty:
+            break
+        frames.append(df)
+        if len(df) < limit:
+            break
+        offset += limit
+    if not frames:
+        return pd.DataFrame()
+    return pd.concat(frames, ignore_index=True)
+
+
+
+if __name__ == "__main__":
+    pro = ts.pro_api(token="8e7d8f41808064385f0e041d92ca95684767755f1134188a7fdfdd47")
+    df = pro.namechange(end_date="2026-01-17")
+    print(df)

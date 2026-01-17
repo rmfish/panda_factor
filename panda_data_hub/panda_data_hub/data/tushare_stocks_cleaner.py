@@ -3,6 +3,7 @@ from abc import ABC
 from panda_common.handlers.database_handler import DatabaseHandler
 from panda_common.logger_config import logger
 from panda_common.utils.stock_utils import get_exchange_suffix
+from panda_data_hub.utils.ts_utils import ts_query
 import tushare as ts
 
 
@@ -22,7 +23,7 @@ class TSStockCleaner(ABC):
     def clean_metadata(self):
         try:
             logger.info("Starting metadata cleaning for Tushare")
-            stocks = self.pro.query('stock_basic')
+            stocks = ts_query('stock_basic')
             stocks = stocks[['ts_code', 'name']]
             stocks = stocks[stocks["name"] != "UNKNOWN"]
             stocks['symbol'] = stocks['ts_code'].apply(get_exchange_suffix)

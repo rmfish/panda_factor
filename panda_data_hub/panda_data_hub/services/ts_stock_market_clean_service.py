@@ -1,22 +1,18 @@
+import time
+import traceback
 from abc import ABC
-
+from concurrent.futures import ThreadPoolExecutor
 
 import tushare as ts
 from pymongo import UpdateOne
-import traceback
-
-import pandas as pd
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-import time
 
 from panda_common.handlers.database_handler import DatabaseHandler
 from panda_common.logger_config import logger
 from panda_common.utils.stock_utils import get_exchange_suffix
 from panda_data_hub.utils.mongo_utils import ensure_collection_and_indexes
-from panda_data_hub.utils.ts_utils import calculate_upper_limit, ts_is_trading_day, get_previous_month_dates, \
-    calculate_lower_limit
+from panda_data_hub.utils.ts_utils import calculate_upper_limit, get_trading_dates, get_previous_month_dates, \
+    calculate_lower_limit, ts_query, get_namechange
 
 """
        使用须知：因tushare对于接口返回数据条数具有严格限制，故无法一次拉取全量数据。此限制会导致接口运行效率偏低，请耐心等待。
@@ -50,15 +46,15 @@ class StockMarketCleanTSServicePRO(ABC):
         logger.info("Starting market data cleaning for tushare")
 
         # 获取交易日
-        date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-        trading_days = []
-        for date in date_range:
-            date_str = datetime.strftime(date, "%Y-%m-%d")
-            if ts_is_trading_day(date_str):
-                trading_days.append(date_str)
-            else:
-                logger.info(f"跳过非交易日: {date_str}")
-        logger.info(f"找到 {len(trading_days)} 个交易日需要处理")
+        # date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        trading_days = get_trading_dates(start_date,end_date)
+        # for date in date_range:
+        #     date_str = datetime.strftime(date, "%Y-%m-%d")
+        #     if ts_is_trading_day(date_str):
+        #         trading_days.append(date_str)
+        #     else:
+        #         logger.info(f"跳过非交易日: {date_str}")
+        logger.info(f"从{start_date}到{end_date} 找到 {len(trading_days)} 个交易日需要处理")
         total_days = len(trading_days)
         processed_days = 0
         # 根据交易日去循环
@@ -93,53 +89,38 @@ class StockMarketCleanTSServicePRO(ABC):
                 # 批次之间添加短暂延迟，避免连接数超限
                 if i + batch_size < len(trading_days):
                     logger.info(
-                        f"完成批次 {i // batch_size + 1}/{(len(trading_days) - 1) // batch_size + 1}，等待10秒后继续...")
-                    time.sleep(10)
+                        f"完成批次 {i // batch_size + 1}/{(len(trading_days) - 1) // batch_size + 1}，等待1秒后继续...")
+                    time.sleep(1)
         logger.info("所有交易日数据处理完成")
 
     def clean_meta_market_data(self,date_str):
         try:
+            total_start = time.time()
             date = date_str.replace("-", "")
-            #  获取当日股票的历史行情
+            fetch_start = time.time()
             price_data = self.pro.query('daily', trade_date=date)
-            # 重置股票行情数据索引
             price_data.reset_index(drop=False, inplace=True)
-            # 洗 index_components列
+            fetch_elapsed = time.time() - fetch_start
+            logger.info(f"Fetched daily data for date {date} in {fetch_elapsed:.2f}s")
             price_data['index_component'] = None
-
             # tushare关于中证500和中证1000这两个指数只有每月的最后一个交易日才有数据，对于沪深300成分股是每月的第一个交易日和最后一个交易日才有数据
-            # 根据日期获取当月三个指数的
+            # tushare关于中证500和中证1000这两个指数只有每月的最后一个交易日才有数据，对于沪深300成分股是每月的第一个交易日和最后一个交易日才有数据
             mid_date,last_date = get_previous_month_dates(date_str = date)
-            # 沪深300
-            hs_300 = self.pro.query('index_weight', index_code='399300.SZ', start_date=mid_date, end_date=last_date)
-            # 中证500
-            zz_500 = self.pro.query('index_weight', index_code='000905.SH', start_date=mid_date, end_date=last_date)
-            # 中证1000
-            zz_1000 = self.pro.query('index_weight', index_code='000852.SH', start_date=mid_date, end_date=last_date)
+            hs_300 = ts_query('index_weight', index_code='399300.SZ', start_date=mid_date, end_date=last_date)
+            zz_500 = ts_query('index_weight', index_code='000905.SH', start_date=mid_date, end_date=last_date)
+            zz_1000 = ts_query('index_weight', index_code='000852.SH', start_date=mid_date, end_date=last_date)
             for idx, row in price_data.iterrows():
                 try:
                     component = self.clean_index_components(data_symbol=row['ts_code'], date=date,hs_300 =hs_300,zz_500 = zz_500,zz_1000 = zz_1000)
                     price_data.at[idx, 'index_component'] = component
-                    logger.info(f"Success to clean index for {row['ts_code']} on {date}")
+                    # logger.info(f"Success to clean index for {row['ts_code']} on {date}")
                 except Exception as e:
                     logger.error(f"Failed to clean index for {row['ts_code']} on {date}: {str(e)}")
                     continue
-            # 洗name列
-            # 报错ERROR - Error checking if ****** on date: single positional indexer is out-of-bounds，说明该股票已经退市
-            price_data['name'] = None
-            # 获取历史名称变更信息
-            # end_date = 20250423的数据条数一共是7413,接口最多返回10000条数据，目前是足够的
-            namechange_info = self.pro.query('namechange', end_date=date)
-            #获取目前所有股票的名称
-            stock_info = self.pro.query('stock_basic')
-            for idx, row in price_data.iterrows():
-                try:
-                    stock_name = self.clean_stock_name(data_symbol=row['ts_code'], date=date,namechange_info = namechange_info,stock_info = stock_info)
-                    price_data.at[idx, 'name'] = stock_name
-                    # logger.info(f"Success to clean name for {row['ts_code']} on {date}")
-                except Exception as e:
-                    logger.error(f"Failed to clean name for {row['ts_code']} on {date}: {str(e)}")
-                    continue
+
+            namechange_info = get_namechange()
+            stock_info = ts_query('stock_basic',list_status="L,D,P")
+            self.clean_stock_name(price_data, date, namechange_info, stock_info)
             price_data = price_data.drop(columns=['index','change','pct_chg','amount'])
             price_data = price_data.rename(columns={'vol': 'volume'})
             price_data = price_data.rename(columns={'trade_date': 'date'})
@@ -177,7 +158,10 @@ class StockMarketCleanTSServicePRO(ABC):
             if upsert_operations:
                 self.db_handler.mongo_client[self.config["MONGO_DB"]]['stock_market'].bulk_write(
                     upsert_operations)
-                # logger.info(f"Successfully upserted market data for date: {date}")
+                total_elapsed = time.time() - total_start
+                logger.info(
+                    f"Saved {len(upsert_operations)} market records for date {date} in {total_elapsed:.2f}s"
+                )
 
         except Exception as e:
             logger.error({e})
@@ -203,23 +187,28 @@ class StockMarketCleanTSServicePRO(ABC):
             logger.error(f"Error checking if {data_symbol} is in index components on {date}: {str(e)}")
             return None
 
-    def clean_stock_name(self, data_symbol, date,namechange_info,stock_info):
-        try:
-            # 获取某只股票的换名历史
-            valid_changes = namechange_info[(namechange_info['ann_date'] <= date) &(namechange_info['ts_code'] == data_symbol)]
-            if not valid_changes.empty:
-                # 按开始日期排序，获取最新的变更记录
-                latest_change = valid_changes.sort_values('ann_date', ascending=False).iloc[0]
-                latest_symbol = latest_change['name']
-                return latest_symbol
-            else:
-                current_info = stock_info[stock_info['ts_code'] == data_symbol]
-                current_name = current_info['name'].iloc[0]
-                return current_name
+    def clean_stock_name(self, price_data, date, namechange_info, stock_info):
+        price_data['name'] = None
+        codes = price_data['ts_code'].unique()
+        namechange_filtered = namechange_info[
+            (namechange_info['ts_code'].isin(codes)) &
+            (namechange_info['start_date'] <= date)
+        ]
+        if not namechange_filtered.empty:
+            latest_changes = (
+                namechange_filtered
+                .sort_values(['ts_code', 'start_date'])
+                .groupby('ts_code')
+                .tail(1)
+                .set_index('ts_code')['name']
+            )
+        else:
+            latest_changes = pd.Series(dtype=object)
 
-        except Exception as e:
-            logger.error(f"Error checking if {data_symbol} on {date}: {str(e)}")
-            return None  # 或者返回其他默认值
+        stock_filtered = stock_info[stock_info['ts_code'].isin(codes)]
+        current_names = stock_filtered.set_index('ts_code')['name']
 
-
-
+        name_series = price_data['ts_code'].map(latest_changes)
+        fallback_series = price_data['ts_code'].map(current_names)
+        name_series = name_series.combine_first(fallback_series)
+        price_data['name'] = name_series.where(name_series.notna(), None)

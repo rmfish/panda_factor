@@ -1,0 +1,12 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: panda_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "panda"
+      MONGO_INITDB_ROOT_PASSWORD: "panda"
+    volumes:
+      - ./data/mongo_data:/data/db

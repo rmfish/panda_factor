@@ -72,13 +72,14 @@ class FactorCleanerTSProService(ABC):
                 # 批次之间添加短暂延迟，避免连接数超限
                 if i + batch_size < len(trading_days):
                     logger.info(
-                        f"完成批次 {i // batch_size + 1}/{(len(trading_days) - 1) // batch_size + 1}，等待10秒后继续...")
-                    time.sleep(10)
+                        f"完成批次 {i // batch_size + 1}/{(len(trading_days) - 1) // batch_size + 1}，等待1秒后继续...")
+                    time.sleep(1)
         logger.info("因子数据清洗全部完成！！！")
 
     def clean_daily_data(self, date_str, pbar):
         """补全当日数据(历史循环补充)"""
         try:
+            total_start = time.time()
             date = date_str.replace('-', '')
             query = {"date": date}
             records = self.db_handler.mongo_find(self.config["MONGO_DB"], 'stock_market', query)
@@ -89,14 +90,14 @@ class FactorCleanerTSProService(ABC):
             data = pd.DataFrame(list(records))
             data = data[['date', 'symbol', 'open','high','low','close','volume']]
             data['ts_code'] = data['symbol'].apply(get_tushare_suffix)
-
-            logger.info("正在获取市值和换手率数据......")
             factor_data = self.pro.query('daily_basic', trade_date=date,fields=['ts_code','turnover_rate','total_mv'])
+
             temp_data = data.merge(factor_data[['ts_code','turnover_rate','total_mv']], on='ts_code', how='left')
             temp_data = temp_data.rename(columns={'total_mv': 'market_cap'})
             temp_data = temp_data.rename(columns={'turnover_rate': 'turnover'})
-            logger.info("正在获取成交额数据......")
+
             price_data = self.pro.query("daily", trade_date=date, fields=['ts_code', 'amount'])
+
             result_data = temp_data.merge(price_data[['ts_code', 'amount']], on='ts_code', how='left')
             result_data = result_data.drop(columns=['ts_code'])
             # tushare的成交额是以千元为单位的
@@ -115,8 +116,10 @@ class FactorCleanerTSProService(ABC):
             if upsert_operations:
                 self.db_handler.mongo_client[self.config["MONGO_DB"]]['factor_base'].bulk_write(
                     upsert_operations)
-                logger.info(f"Successfully upserted factor data for date: {date}")
-
+                total_elapsed = time.time() - total_start
+                logger.info(
+                    f"Saved {len(upsert_operations)} factor records for date {date} in {total_elapsed:.2f}s"
+                )
 
         except Exception as e:
             error_msg = f"Failed to process market data for quarter : {str(e)}\nStack trace:\n{traceback.format_exc()}"
