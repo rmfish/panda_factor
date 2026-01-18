@@ -11,6 +11,7 @@
   border-bottom: 1px solid #eef1f6;
   background: #ffffff;
   gap: 24px;
+  flex-wrap: wrap;
 }
 
 .app-title {
@@ -57,9 +58,100 @@
   color: inherit;
 }
 
+.factor-metrics {
+  flex-wrap: wrap;
+}
+
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.workspace-tabs .semi-tabs-content {
+  padding: 0;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(420px, 2fr) minmax(240px, 1fr);
+  gap: 20px;
+}
+
+.workspace-card {
+  height: 100%;
+}
+
+.workspace-form {
+  gap: 16px;
+}
+
+.workspace-code {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-code-header {
+  margin-bottom: 8px;
+}
+
+.workspace-editor {
+  font-family: "JetBrains Mono", "SFMono-Regular", monospace;
+  background: #11131a;
+  color: #e5e9f2;
+}
+
+.workspace-code-actions {
+  justify-content: flex-end;
+}
+
+.workspace-run-grid,
+.workspace-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.workspace-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.workspace-log-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-run-actions {
+  margin-top: 16px;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .app-footer {
   padding: 24px 48px 32px;
   text-align: center;
   border-top: 1px solid #eef1f6;
   background: #ffffff;
+}
+
+@media (max-width: 1200px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 20px 24px;
+  }
+
+  .app-content {
+    padding: 24px;
+  }
 }

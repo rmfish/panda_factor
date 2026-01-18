@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Card,
@@ -8,68 +8,82 @@ import {
   Tag,
   Typography
 } from '@douyinfe/semi-ui';
+import { getFactorDetail } from '../api/factorService.js';
 
 const { Title, Paragraph, Text } = Typography;
 
-const factorMap = {
-  'alpha-001': {
-    name: 'Alpha Momentum',
-    owner: '策略组',
-    status: '已上线',
-    updatedAt: '2024-09-18',
-    summary: '关注中长期动量信号，提供稳定的择时能力。'
-  },
-  'beta-017': {
-    name: 'Beta Volatility',
-    owner: '风控组',
-    status: '调试中',
-    updatedAt: '2024-09-10',
-    summary: '对波动率异常进行预警，辅助风险控制。'
-  },
-  'gamma-032': {
-    name: 'Gamma Liquidity',
-    owner: '研究组',
-    status: '规划中',
-    updatedAt: '2024-09-02',
-    summary: '衡量流动性衰减趋势，用于交易执行优化。'
-  }
+const fallbackDetail = {
+  factor_name: 'Alpha Momentum',
+  name: '动量因子',
+  factor_type: 'stock',
+  code_type: 'python',
+  tags: '动量,趋势',
+  describe: '关注中长期动量信号，提供稳定的择时能力。',
+  updated_at: '2024-09-18',
+  status: 2
+};
+
+const statusMap = {
+  0: { label: '未运行', color: 'grey' },
+  1: { label: '运行中', color: 'blue' },
+  2: { label: '运行成功', color: 'green' },
+  3: { label: '运行失败', color: 'red' }
 };
 
 export default function FactorDetail() {
   const { factorId } = useParams();
-  const detail = useMemo(
-    () => factorMap[factorId] || factorMap['alpha-001'],
-    [factorId]
-  );
+  const [detail, setDetail] = useState(fallbackDetail);
+  const resolvedFactorId = factorId || 'alpha-001';
+
+  useEffect(() => {
+    const loadDetail = async () => {
+      const response = await getFactorDetail(resolvedFactorId);
+      if (response.ok && response.data?.data) {
+        setDetail(response.data.data);
+      }
+    };
+    loadDetail();
+  }, [resolvedFactorId]);
+
+  const status = useMemo(() => statusMap[detail.status] || statusMap[0], [detail.status]);
 
   const descriptionData = [
-    { key: '负责人', value: detail.owner },
-    { key: '状态', value: <Tag color="green">{detail.status}</Tag> },
-    { key: '最近更新', value: detail.updatedAt },
-    { key: '因子编号', value: factorId }
+    { key: '因子名称', value: detail.factor_name },
+    { key: '中文名', value: detail.name },
+    { key: '因子类型', value: detail.factor_type },
+    { key: '代码类型', value: detail.code_type },
+    { key: '标签', value: detail.tags || '-' },
+    { key: '更新时间', value: detail.updated_at || '-' }
   ];
 
   return (
     <div className="page-shell">
       <Space vertical align="start" spacing="loose" className="page-hero">
         <Space align="center">
-          <Title heading={3}>{detail.name}</Title>
-          <Tag color="green" type="solid">
-            {detail.status}
+          <Title heading={3}>{detail.factor_name}</Title>
+          <Tag color={status.color} type="solid">
+            {status.label}
           </Tag>
         </Space>
-        <Paragraph type="tertiary">{detail.summary}</Paragraph>
+        <Paragraph type="tertiary">{detail.describe}</Paragraph>
       </Space>
       <Card className="detail-card" shadow="hover">
         <Descriptions data={descriptionData} column={2} row />
         <Paragraph type="tertiary" className="detail-footer">
-          如需编辑配置，请联系相关负责人或在后续版本中补充表单。
+          进入因子工作台可以编辑代码、运行管理并查看分析报告。
         </Paragraph>
-        <Button theme="solid" type="primary">
-          <Link to="/" className="link-button">
-            返回列表
-          </Link>
-        </Button>
+        <Space spacing="tight">
+          <Button theme="solid" type="primary">
+            <Link to={`/workspace/${resolvedFactorId}`} className="link-button">
+              打开工作台
+            </Link>
+          </Button>
+          <Button theme="borderless" type="primary">
+            <Link to="/" className="link-button">
+              返回列表
+            </Link>
+          </Button>
+        </Space>
       </Card>
     </div>
   );

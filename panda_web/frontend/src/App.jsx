@@ -1,7 +1,15 @@
 import { Layout, Nav, Space, Typography } from '@douyinfe/semi-ui';
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
 import FactorList from './pages/FactorList.jsx';
 import FactorDetail from './pages/FactorDetail.jsx';
+import FactorWorkspace from './pages/FactorWorkspace.jsx';
 import './App.css';
 
 const { Header, Content, Footer } = Layout;
@@ -9,18 +17,20 @@ const { Title, Text } = Typography;
 
 const navItems = [
   { itemKey: 'list', text: '因子列表' },
-  { itemKey: 'detail', text: '因子详情' }
+  { itemKey: 'workspace', text: '因子工作台' }
 ];
 
 const navRoutes = {
   list: '/',
-  detail: '/detail/alpha-001'
+  workspace: '/workspace/alpha-001'
 };
 
 function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedKey = location.pathname.startsWith('/detail') ? 'detail' : 'list';
+  const isWorkspaceRoute = location.pathname.startsWith('/workspace');
+  const selectedKey = isWorkspaceRoute ? 'workspace' : 'list';
+  const workspaceRoute = isWorkspaceRoute ? location.pathname : navRoutes.workspace;
 
   return (
     <Layout className="app-shell">
@@ -35,7 +45,9 @@ function AppShell() {
           mode="horizontal"
           items={navItems}
           selectedKeys={[selectedKey]}
-          onSelect={({ itemKey }) => navigate(navRoutes[itemKey])}
+          onSelect={({ itemKey }) =>
+            navigate(itemKey === 'workspace' ? workspaceRoute : navRoutes[itemKey])
+          }
           className="app-nav"
         />
       </Header>
@@ -43,6 +55,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<FactorList />} />
           <Route path="/detail/:factorId" element={<FactorDetail />} />
+          <Route path="/workspace/:factorId" element={<FactorWorkspace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Content>
