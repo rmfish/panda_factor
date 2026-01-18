@@ -1,0 +1,146 @@
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f7fb 0%, #ffffff 100%);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 48px;
+  border-bottom: 1px solid #eef1f6;
+  background: #ffffff;
+  gap: 24px;
+}
+
+.app-title {
+  margin: 0;
+}
+
+.app-nav {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.app-content {
+  padding: 32px 48px 56px;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-hero {
+  max-width: 720px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.factor-card .semi-card-body,
+.detail-card .semi-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-footer {
+  margin-top: 8px;
+}
+
+.link-button {
+  color: inherit;
+}
+
+.factor-metrics {
+  flex-wrap: wrap;
+}
+
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.workspace-tabs .semi-tabs-content {
+  padding: 0;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(420px, 2fr) minmax(240px, 1fr);
+  gap: 20px;
+}
+
+.workspace-card {
+  height: 100%;
+}
+
+.workspace-form {
+  gap: 16px;
+}
+
+.workspace-code {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.workspace-code-header {
+  margin-bottom: 8px;
+}
+
+.workspace-editor {
+  font-family: "JetBrains Mono", "SFMono-Regular", monospace;
+  background: #11131a;
+  color: #e5e9f2;
+}
+
+.workspace-code-actions {
+  justify-content: flex-end;
+}
+
+.workspace-run-grid,
+.workspace-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.workspace-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.workspace-log-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-run-actions {
+  margin-top: 16px;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.app-footer {
+  padding: 24px 48px 32px;
+  text-align: center;
+  border-top: 1px solid #eef1f6;
+  background: #ffffff;
+}
+
+@media (max-width: 1200px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
