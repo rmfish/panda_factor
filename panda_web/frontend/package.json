@@ -9,13 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@iconify/vue": "^4.3.0",
-    "pinia": "^2.1.7",
-    "vue": "^3.4.31",
-    "vue-router": "^4.4.0"
+    "@douyinfe/semi-ui": "^2.70.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.5",
+    "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.3.5"
   }
 }

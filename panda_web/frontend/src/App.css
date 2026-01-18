@@ -1,0 +1,65 @@
+.app-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5f7fb 0%, #ffffff 100%);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 48px;
+  border-bottom: 1px solid #eef1f6;
+  background: #ffffff;
+  gap: 24px;
+}
+
+.app-title {
+  margin: 0;
+}
+
+.app-nav {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.app-content {
+  padding: 32px 48px 56px;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page-hero {
+  max-width: 720px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.factor-card .semi-card-body,
+.detail-card .semi-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-footer {
+  margin-top: 8px;
+}
+
+.link-button {
+  color: inherit;
+}
+
+.app-footer {
+  padding: 24px 48px 32px;
+  text-align: center;
+  border-top: 1px solid #eef1f6;
+  background: #ffffff;
+}
