@@ -1,8 +1,12 @@
 body {
   margin: 0;
   font-family: "Inter", "Segoe UI", sans-serif;
-  background: #151821;
-  color: #e5e9f2;
+  background: #f5f7fb;
+  color: #1c1f23;
+}
+
+#root {
+  min-height: 100vh;
 }
 
 a {
