@@ -4,7 +4,10 @@
       <div class="title-group">
         <button class="icon-button" type="button">☰</button>
         <div>
-          <h2>我的因子列表</h2>
+          <div class="title-row">
+            <h2>我的因子列表</h2>
+            <span class="pill">量化因子资产</span>
+          </div>
           <p>从后端 /api/v1/user_factor_list 拉取用户因子列表。</p>
         </div>
       </div>
@@ -15,6 +18,24 @@
         <button class="primary" @click="goToEditor">+ 新增因子</button>
       </div>
     </header>
+
+    <section class="summary-cards">
+      <article class="summary-card">
+        <span>因子数量</span>
+        <strong>{{ meta.total }}</strong>
+        <small>共 {{ meta.total_pages }} 页</small>
+      </article>
+      <article class="summary-card">
+        <span>最新回测</span>
+        <strong>{{ latestUpdate }}</strong>
+        <small>最近更新因子</small>
+      </article>
+      <article class="summary-card">
+        <span>平均夏普</span>
+        <strong>{{ averageSharpe }}</strong>
+        <small>当前页均值</small>
+      </article>
+    </section>
 
     <form class="toolbar" @submit.prevent="loadFactors">
       <label>
@@ -121,7 +142,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { apiGet, apiPost } from '../api/client';
@@ -138,6 +159,17 @@ const filters = reactive({
   pageSize: 10,
   sortField: 'created_at',
   sortOrder: 'desc'
+});
+
+const latestUpdate = computed(() => items.value?.[0]?.updated_at || '-');
+
+const averageSharpe = computed(() => {
+  if (!items.value.length) {
+    return '-';
+  }
+  const values = items.value.map((item) => Number(item.sharpe_ratio || 0));
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return (total / values.length).toFixed(2);
 });
 
 const loadFactors = async () => {
@@ -260,10 +292,10 @@ onMounted(loadFactors);
 
 <style scoped>
 .view {
-  background: #1f222a;
+  background: linear-gradient(180deg, rgba(31, 34, 42, 0.95), rgba(24, 27, 35, 0.95));
   padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -283,14 +315,55 @@ onMounted(loadFactors);
   gap: 12px;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .title-group h2 {
   margin: 0;
   font-size: 20px;
 }
 
+.pill {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(58, 110, 232, 0.16);
+  color: #9fb3ff;
+  border: 1px solid rgba(58, 110, 232, 0.5);
+}
+
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.summary-card {
+  background: rgba(42, 46, 57, 0.8);
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid rgba(58, 65, 82, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summary-card strong {
+  font-size: 20px;
+  color: #ff8f66;
+}
+
+.summary-card small {
+  color: #7a869a;
+  font-size: 12px;
 }
 
 .toolbar {
@@ -301,6 +374,7 @@ onMounted(loadFactors);
   background: #2a2e39;
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 label {
@@ -343,10 +417,11 @@ select {
 }
 
 .table-card {
-  background: #2a2e39;
-  border-radius: 12px;
+  background: rgba(42, 46, 57, 0.85);
+  border-radius: 14px;
   padding: 8px 12px 16px;
   overflow-x: auto;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 table {
@@ -358,13 +433,17 @@ table {
 th,
 td {
   padding: 14px 12px;
-  border-bottom: 1px solid #3a4152;
+  border-bottom: 1px solid rgba(58, 65, 82, 0.6);
   text-align: left;
 }
 
 th {
   color: #a9b4c8;
   font-weight: 500;
+}
+
+tbody tr:hover {
+  background: rgba(32, 36, 46, 0.6);
 }
 
 .row-actions {
@@ -379,6 +458,11 @@ th {
   padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.row-actions button:hover {
+  border-color: #3a6ee8;
+  color: #ffffff;
 }
 
 .row-actions button.danger {

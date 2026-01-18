@@ -4,7 +4,10 @@
       <div class="title-group">
         <button class="icon-button" type="button" @click="goBack">←</button>
         <div>
-          <h2>{{ factorName || '未命名因子' }}</h2>
+          <div class="title-row">
+            <h2>{{ factorName || '未命名因子' }}</h2>
+            <span class="pill">分析中心</span>
+          </div>
           <p>收益与深度分析</p>
         </div>
       </div>
@@ -253,10 +256,10 @@ onMounted(() => {
 
 <style scoped>
 .view {
-  background: #1f222a;
+  background: linear-gradient(180deg, rgba(31, 34, 42, 0.95), rgba(24, 27, 35, 0.95));
   padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -273,6 +276,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pill {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(58, 110, 232, 0.16);
+  color: #9fb3ff;
+  border: 1px solid rgba(58, 110, 232, 0.5);
 }
 
 .header-actions {
@@ -305,9 +323,10 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   align-items: end;
-  background: #2a2e39;
+  background: rgba(42, 46, 57, 0.85);
   padding: 12px;
   border-radius: 12px;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 label {
@@ -333,25 +352,27 @@ input {
 }
 
 .panel {
-  background: #2a2e39;
-  border-radius: 12px;
+  background: rgba(42, 46, 57, 0.85);
+  border-radius: 14px;
   padding: 16px;
   min-height: 160px;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 .metric-card {
-  background: #2a2e39;
-  border-radius: 12px;
+  background: rgba(42, 46, 57, 0.85);
+  border-radius: 14px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   text-align: left;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 .metric-card strong {
   font-size: 20px;
-  color: #ff5b5b;
+  color: #ff8f66;
 }
 
 .primary {
@@ -370,6 +391,11 @@ input {
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.ghost:hover {
+  border-color: #3a6ee8;
+  color: #ffffff;
 }
 
 .icon-button {

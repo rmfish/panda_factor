@@ -26,6 +26,10 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
+  if (import.meta.env.VITE_USE_MOCK === 'true') {
+    next();
+    return;
+  }
   const auth = useAuthStore();
   if (!auth.token && !auth.userId) {
     window.location.href = `/login?redirect=/factor${to.fullPath}`;

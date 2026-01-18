@@ -1,3 +1,5 @@
+import { handleMockRequest, shouldUseMock } from './mock';
+
 const defaultHeaders = {
   'Content-Type': 'application/json'
 };
@@ -27,6 +29,9 @@ const parseJson = async (response) => {
 };
 
 export const apiGet = async (path, params) => {
+  if (shouldUseMock()) {
+    return handleMockRequest({ path, method: 'GET', params });
+  }
   const response = await fetch(`${path}${toQueryString(params)}`, {
     method: 'GET',
     headers: defaultHeaders
@@ -39,6 +44,9 @@ export const apiGet = async (path, params) => {
 };
 
 export const apiPost = async (path, body) => {
+  if (shouldUseMock()) {
+    return handleMockRequest({ path, method: 'POST', body });
+  }
   const response = await fetch(path, {
     method: 'POST',
     headers: defaultHeaders,

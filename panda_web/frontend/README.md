@@ -23,3 +23,7 @@ npm run dev
 ```
 
 The dev server will run on `http://localhost:5173/factor/` by default.
+
+## Mock API
+
+When you run the dev server, the frontend uses mock API data by default (see `.env.development`). If you want to connect to a real backend, set `VITE_USE_MOCK=false` or override the env var in your shell before running `npm run dev`.
