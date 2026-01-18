@@ -4,8 +4,11 @@
       <div class="title-group">
         <button class="icon-button" type="button" @click="goBack">←</button>
         <div>
-          <h2>{{ form.name || '未命名因子' }}</h2>
-          <p>Python 模式</p>
+          <div class="title-row">
+            <h2>{{ form.name || '未命名因子' }}</h2>
+            <span class="pill">{{ form.code_type.toUpperCase() }}</span>
+          </div>
+          <p>因子编辑器 · 量化开发控制台</p>
         </div>
       </div>
       <div class="header-actions">
@@ -90,6 +93,10 @@
             英文名
             <input v-model="form.factor_name" type="text" />
           </label>
+          <div class="editor-actions">
+            <button class="ghost" type="button">⛶ 全屏</button>
+            <button class="ghost" type="button">💾 保存草稿</button>
+          </div>
         </div>
         <textarea class="code-editor" v-model="form.code" rows="18" />
         <div class="meta-grid">
@@ -277,10 +284,10 @@ onMounted(() => {
 
 <style scoped>
 .view {
-  background: #1f222a;
+  background: linear-gradient(180deg, rgba(31, 34, 42, 0.95), rgba(24, 27, 35, 0.95));
   padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -299,6 +306,21 @@ onMounted(() => {
   gap: 12px;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pill {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(58, 110, 232, 0.16);
+  color: #9fb3ff;
+  border: 1px solid rgba(58, 110, 232, 0.5);
+}
+
 .header-actions {
   display: flex;
   gap: 12px;
@@ -313,9 +335,10 @@ onMounted(() => {
 .sidebar,
 .assistant,
 .editor-main {
-  background: #2a2e39;
-  border-radius: 12px;
+  background: rgba(42, 46, 57, 0.85);
+  border-radius: 14px;
   padding: 16px;
+  border: 1px solid rgba(58, 65, 82, 0.5);
 }
 
 .sidebar h3,
@@ -350,17 +373,26 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
+  align-items: end;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .code-editor {
   width: 100%;
   min-height: 320px;
-  background: #1c1f27;
-  border: 1px solid #3a4152;
-  border-radius: 12px;
+  background: #1a1d25;
+  border: 1px solid rgba(58, 65, 82, 0.6);
+  border-radius: 14px;
   padding: 16px;
   font-family: 'Fira Code', monospace;
   color: #e5e9f2;
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 20, 0.35);
 }
 
 .meta-grid {
@@ -393,6 +425,11 @@ textarea {
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.ghost:hover {
+  border-color: #3a6ee8;
+  color: #ffffff;
 }
 
 .icon-button {
