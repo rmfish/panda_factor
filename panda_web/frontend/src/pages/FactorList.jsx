@@ -9,7 +9,7 @@ import {
   Input,
   Toast,
   Popconfirm,
-} from '@douyinfe/semi-ui';
+} from '@douyinfe/semi-ui-19';
 import { useNavigate } from 'react-router-dom';
 import { getUserFactorList, deleteFactor, queryFactor, updateFactor } from '../utils/api';
 

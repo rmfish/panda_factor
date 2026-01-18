@@ -48,7 +48,7 @@ export const getTaskStatus = (taskId) =>
   fetchJson('/query_task_status', { params: { task_id: taskId } });
 
 export const getTaskLogs = (taskId, lastLogId) =>
-  fetchJson('/task_logs', { params: { task_id: taskId, last_log_id: lastLogId } });
+  fetchJson('/task_logs', { params: { task_id: taskId, log_id: lastLogId } });
 
 export const getFactorAnalysisData = (taskId) =>
   fetchJson('/query_factor_analysis_data', { params: { task_id: taskId } });

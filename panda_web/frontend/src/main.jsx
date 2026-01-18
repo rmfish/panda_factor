@@ -17,11 +17,7 @@ function render(container) {
   }
 
   root = ReactDOM.createRoot(mountNode);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  root.render(<App />);
 }
 
 function mount(props = {}) {
