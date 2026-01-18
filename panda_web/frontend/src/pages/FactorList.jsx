@@ -1,101 +1,274 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Card, Button, Space, Tag, Typography } from '@douyinfe/semi-ui';
-import { Link } from 'react-router-dom';
-import { getUserFactorList } from '../api/factorService.js';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  Table,
+  Button,
+  Space,
+  Typography,
+  Modal,
+  Form,
+  Input,
+  Toast,
+  Popconfirm,
+} from '@douyinfe/semi-ui';
+import { useNavigate } from 'react-router-dom';
+import { getUserFactorList, deleteFactor, queryFactor, updateFactor } from '../utils/api';
 
-const { Title, Paragraph, Text } = Typography;
+const { Title, Text } = Typography;
 
-const fallbackFactors = [
-  {
-    factor_id: 'alpha-001',
-    factor_name: 'Alpha Momentum',
-    name: '动量因子',
-    return_ratio: '27.62%',
-    sharpe_ratio: 1.61,
-    maximum_drawdown: '6.16%',
-    annualized_ratio: '29.05%',
-    IC: 0.059,
-    IR: 0.31,
-    updated_at: '2024-09-18'
-  },
-  {
-    factor_id: 'beta-017',
-    factor_name: 'Beta Volatility',
-    name: '波动因子',
-    return_ratio: '18.25%',
-    sharpe_ratio: 1.12,
-    maximum_drawdown: '8.05%',
-    annualized_ratio: '21.40%',
-    IC: 0.032,
-    IR: 0.18,
-    updated_at: '2024-09-10'
+function formatDate(dt) {
+  if (!dt) return '-';
+  try {
+    return new Date(dt).toLocaleString();
+  } catch {
+    return dt;
   }
-];
+}
 
 export default function FactorList() {
-  const [factors, setFactors] = useState(fallbackFactors);
+  const navigate = useNavigate();
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(7);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const [editVisible, setEditVisible] = useState(false);
+  const [editingFactor, setEditingFactor] = useState(null);
+  const [editFormValues, setEditFormValues] = useState({ name: '' });
+
+  const fetchList = async () => {
+    setLoading(true);
+    try {
+      const res = await getUserFactorList({
+        user_id: '0',
+        page,
+        page_size: pageSize,
+        sort_field: sortField,
+        sort_order: sortOrder,
+      });
+      const list = res?.data || [];
+      setData(list);
+      setTotal(res?.total || 0);
+    } catch (e) {
+      Toast.error(`获取列表失败：${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchList = async () => {
-      const response = await getUserFactorList({
-        user_id: 'demo-user',
-        page: 1,
-        page_size: 6,
-        sort_field: 'updated_at',
-        sort_order: 'desc'
-      });
-      if (response.ok && response.data?.data?.data) {
-        setFactors(response.data.data.data);
-      }
-    };
     fetchList();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, sortField, sortOrder]);
 
-  const renderedFactors = useMemo(() => factors.slice(0, 6), [factors]);
+  const onDelete = async (record) => {
+    try {
+      await deleteFactor(record.factor_id);
+      Toast.success('删除成功');
+      fetchList();
+    } catch (e) {
+      Toast.error(`删除失败：${e.message}`);
+    }
+  };
+
+  const openEdit = async (record) => {
+    try {
+      const detail = await queryFactor(record.factor_id);
+      setEditingFactor({ id: record.factor_id, detail });
+      setEditFormValues({ name: detail?.name || '' });
+      setEditVisible(true);
+    } catch (e) {
+      Toast.error(`获取详情失败：${e.message}`);
+    }
+  };
+
+  const submitEdit = async () => {
+    if (!editingFactor) return;
+    try {
+      const body = { ...editingFactor.detail, name: editFormValues.name };
+      await updateFactor(editingFactor.id, body);
+      Toast.success('更新成功');
+      setEditVisible(false);
+      setEditingFactor(null);
+      fetchList();
+    } catch (e) {
+      Toast.error(`更新失败：${e.message}`);
+    }
+  };
+
+  const columns = useMemo(
+    () => [
+      {
+        title: '因子名称',
+        dataIndex: 'name',
+        sorter: true,
+        render: (name, record) => (
+          <Space>
+            <Button type="tertiary" onClick={() => navigate(`/detail/${record.factor_id}`)}>
+              {name || '-'}
+            </Button>
+            <Text type="tertiary">{record.factor_name}</Text>
+          </Space>
+        ),
+        sortOrder:
+          sortField === 'name'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '收益率',
+        dataIndex: 'return_ratio',
+        sorter: true,
+        render: (val) => (
+          <Text style={{ color: val && val !== '0.0%' ? '#ff4d4f' : 'inherit', fontWeight: 600 }}>
+            {val || '-'}
+          </Text>
+        ),
+        sortOrder:
+          sortField === 'return_ratio'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '夏普比率',
+        dataIndex: 'sharpe_ratio',
+        sorter: true,
+        render: (val) => <Text>{val ?? '-'}</Text>,
+        sortOrder:
+          sortField === 'sharpe_ratio'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '最大回撤',
+        dataIndex: 'maximum_drawdown',
+        sorter: true,
+        render: (val) => <Text>{val ?? '-'}</Text>,
+        sortOrder:
+          sortField === 'maximum_drawdown'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '年化收益率',
+        dataIndex: 'annualized_ratio',
+        render: (val) => <Text>{val ?? '-'}</Text>,
+      },
+      {
+        title: 'IC',
+        dataIndex: 'IC',
+        sorter: true,
+        render: (val) => <Text>{val ?? '-'}</Text>,
+        sortOrder:
+          sortField === 'IC'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: 'IR',
+        dataIndex: 'IR',
+        sorter: true,
+        render: (val) => <Text>{val ?? '-'}</Text>,
+        sortOrder:
+          sortField === 'IR'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '最近回测时间',
+        dataIndex: 'updated_at',
+        sorter: true,
+        render: (val) => <Text type="tertiary">{formatDate(val)}</Text>,
+        sortOrder:
+          sortField === 'updated_at'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '创建时间',
+        dataIndex: 'created_at',
+        sorter: true,
+        render: (val) => <Text type="tertiary">{formatDate(val)}</Text>,
+        sortOrder:
+          sortField === 'created_at'
+            ? (sortOrder === 'asc' ? 'ascend' : 'descend')
+            : false,
+      },
+      {
+        title: '操作',
+        dataIndex: 'op',
+        width: 140,
+        render: (_, record) => (
+          <Space>
+            <Button onClick={() => navigate(`/detail/${record.factor_id}`)}>查看</Button>
+            <Button onClick={() => openEdit(record)}>编辑</Button>
+            <Popconfirm
+              title="确认删除该因子？"
+              content="删除后不可恢复"
+              onConfirm={() => onDelete(record)}
+            >
+              <Button type="danger">删除</Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortField, sortOrder],
+  );
+
+  const onSort = ({ sortOrder: order, sortField: field }) => {
+    if (!field) return;
+    setSortField(field);
+    setSortOrder(order === 'ascend' ? 'asc' : 'desc');
+    setPage(1);
+  };
 
   return (
     <div className="page-shell">
-      <Space vertical align="start" spacing="loose" className="page-hero">
-        <Title heading={3}>因子列表</Title>
-        <Paragraph type="tertiary">
-          结合服务端因子列表接口展示最新更新的因子概览，并进入工作台继续编辑与运行。
-        </Paragraph>
+      <Space align="center" style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title heading={4}>我的因子列表</Title>
+        <Space>
+          <Button onClick={fetchList}>刷新</Button>
+        </Space>
       </Space>
-      <div className="card-grid">
-        {renderedFactors.map((factor) => {
-          const factorId = factor.factor_id || factor.id;
-          return (
-            <Card key={factorId} className="factor-card" shadow="hover">
-            <Space vertical align="start" spacing="tight">
-              <Space align="center">
-                <Title heading={5}>{factor.factor_name || factor.name}</Title>
-                <Tag color="blue" type="solid">
-                  {factor.name || '自定义'}
-                </Tag>
-              </Space>
-              <Text type="tertiary">最近更新：{factor.updated_at}</Text>
-              <Space spacing="tight" className="factor-metrics">
-                <Text type="tertiary">年化：{factor.annualized_ratio}</Text>
-                <Text type="tertiary">回撤：{factor.maximum_drawdown}</Text>
-                <Text type="tertiary">IC：{factor.IC}</Text>
-              </Space>
-              <Space spacing="tight">
-                <Button theme="solid" type="primary">
-                  <Link to={`/workspace/${factorId}`} className="link-button">
-                    进入工作台
-                  </Link>
-                </Button>
-                <Button theme="borderless" type="primary">
-                  <Link to={`/detail/${factorId}`} className="link-button">
-                    查看详情
-                  </Link>
-                </Button>
-              </Space>
-            </Space>
-          </Card>
-          );
-        })}
-      </div>
+      <Table
+        loading={loading}
+        columns={columns}
+        dataSource={data}
+        pagination={{
+          pageSize,
+          currentPage: page,
+          total,
+          onChange: (cp, ps) => {
+            setPage(cp);
+            setPageSize(ps);
+          },
+        }}
+        onSort={onSort}
+        rowKey="factor_id"
+      />
+
+      <Modal
+        title="编辑因子"
+        visible={editVisible}
+        onCancel={() => setEditVisible(false)}
+        onOk={submitEdit}
+        okText="保存"
+      >
+        <Form>
+          <Form.Input
+            field="name"
+            label="因子中文名称"
+            value={editFormValues.name}
+            onChange={(v) => setEditFormValues((s) => ({ ...s, name: v }))}
+            style={{ width: '100%' }}
+            rules={[{ required: true, message: '请输入名称' }]}
+          />
+        </Form>
+      </Modal>
     </div>
   );
 }
