@@ -2,75 +2,28 @@
   <section class="view">
     <header class="view-header">
       <div class="title-group">
-        <button class="icon-button" type="button">☰</button>
+        <button class="icon-button" type="button">
+          <Icon icon="mdi:menu" width="18" height="18" />
+        </button>
         <div>
           <div class="title-row">
             <h2>我的因子列表</h2>
             <span class="pill">量化因子资产</span>
           </div>
-          <p>从后端 /api/v1/user_factor_list 拉取用户因子列表。</p>
+          <p class="subtitle">展示当前用户的因子回测表现</p>
         </div>
       </div>
       <div class="header-actions">
-        <button class="ghost" @click="loadFactors" :disabled="loading">
-          {{ loading ? '加载中...' : '刷新' }}
+        <button class="ghost" type="button" @click="goBack">
+          <Icon icon="mdi:arrow-left" width="16" height="16" />
+          <span class="btn-text">返回因子关系</span>
         </button>
-        <button class="primary" @click="goToEditor">+ 新增因子</button>
+        <button class="primary" type="button" @click="goToEditor">
+          <Icon icon="mdi:plus" width="16" height="16" />
+          <span class="btn-text">新建因子</span>
+        </button>
       </div>
     </header>
-
-    <section class="summary-cards">
-      <article class="summary-card">
-        <span>因子数量</span>
-        <strong>{{ meta.total }}</strong>
-        <small>共 {{ meta.total_pages }} 页</small>
-      </article>
-      <article class="summary-card">
-        <span>最新回测</span>
-        <strong>{{ latestUpdate }}</strong>
-        <small>最近更新因子</small>
-      </article>
-      <article class="summary-card">
-        <span>平均夏普</span>
-        <strong>{{ averageSharpe }}</strong>
-        <small>当前页均值</small>
-      </article>
-    </section>
-
-    <form class="toolbar" @submit.prevent="loadFactors">
-      <label>
-        用户 ID
-        <input v-model="filters.userId" type="text" />
-      </label>
-      <label>
-        页码
-        <input v-model.number="filters.page" type="number" min="1" />
-      </label>
-      <label>
-        每页数量
-        <input v-model.number="filters.pageSize" type="number" min="1" max="100" />
-      </label>
-      <label>
-        排序字段
-        <select v-model="filters.sortField">
-          <option value="created_at">created_at</option>
-          <option value="updated_at">updated_at</option>
-          <option value="return_ratio">return_ratio</option>
-          <option value="sharpe_ratio">sharpe_ratio</option>
-          <option value="maximum_drawdown">maximum_drawdown</option>
-          <option value="IC">IC</option>
-          <option value="IR">IR</option>
-        </select>
-      </label>
-      <label>
-        排序方式
-        <select v-model="filters.sortOrder">
-          <option value="desc">desc</option>
-          <option value="asc">asc</option>
-        </select>
-      </label>
-      <button class="primary" type="submit">查询</button>
-    </form>
 
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -93,18 +46,26 @@
               <strong>{{ item.name }}</strong>
               <div class="muted">{{ item.factor_name }}</div>
             </td>
-            <td class="highlight">{{ item.return_ratio }}</td>
-            <td>{{ item.sharpe_ratio }}</td>
-            <td>{{ item.maximum_drawdown }}</td>
-            <td>{{ item.updated_at }}</td>
-            <td>{{ item.created_at }}</td>
+            <td :class="['return-cell', isPositive(item.return_ratio) ? 'positive' : 'negative']">
+              {{ item.return_ratio || '-' }}
+            </td>
+            <td>{{ formatNumber(item.sharpe_ratio) }}</td>
+            <td>{{ item.maximum_drawdown || '-' }}</td>
+            <td>{{ formatDateTime(item.updated_at) }}</td>
+            <td>{{ formatDateTime(item.created_at) }}</td>
             <td>
               <div class="row-actions">
-                <button type="button" @click="goToEditor(item.factor_id)" title="编辑">✏️</button>
-                <button type="button" @click="copyFactor(item.factor_id)" title="复制">📋</button>
-                <button type="button" @click="runFactor(item.factor_id)" title="运行">▶️</button>
+                <button type="button" @click="goToEditor(item.factor_id)" title="编辑">
+                  <Icon icon="mdi:pencil-outline" width="16" height="16" />
+                </button>
+                <button type="button" @click="copyFactor(item.factor_id)" title="复制">
+                  <Icon icon="mdi:content-copy" width="16" height="16" />
+                </button>
+                <button type="button" @click="runFactor(item.factor_id)" title="运行">
+                  <Icon icon="mdi:play-outline" width="16" height="16" />
+                </button>
                 <button type="button" class="danger" @click="deleteFactor(item.factor_id)" title="删除">
-                  🗑️
+                  <Icon icon="mdi:delete-outline" width="16" height="16" />
                 </button>
               </div>
             </td>
@@ -114,7 +75,7 @@
     </div>
     <p v-else class="empty">暂无数据。</p>
 
-    <footer class="meta">
+    <footer class="meta" v-if="meta.total_pages > 0">
       <button class="ghost" type="button" @click="jumpPage(1)" :disabled="meta.page <= 1">«</button>
       <button class="ghost" type="button" @click="jumpPage(meta.page - 1)" :disabled="meta.page <= 1">
         ‹
@@ -146,6 +107,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { apiGet, apiPost } from '../api/client';
+import { Icon } from '@iconify/vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -154,23 +116,33 @@ const error = ref('');
 const items = ref([]);
 const meta = reactive({ total: 0, page: 1, total_pages: 1 });
 const filters = reactive({
-  userId: auth.userId || '',
+  userId: auth.userId || '0',
   page: 1,
-  pageSize: 10,
+  pageSize: 7,
   sortField: 'created_at',
   sortOrder: 'desc'
 });
 
-const latestUpdate = computed(() => items.value?.[0]?.updated_at || '-');
+const isPositive = (ratio) => {
+  if (!ratio) return false;
+  const value = Number(String(ratio).replace('%', ''));
+  return !Number.isNaN(value) && value >= 0;
+};
 
-const averageSharpe = computed(() => {
-  if (!items.value.length) {
-    return '-';
-  }
-  const values = items.value.map((item) => Number(item.sharpe_ratio || 0));
-  const total = values.reduce((sum, value) => sum + value, 0);
-  return (total / values.length).toFixed(2);
-});
+const formatNumber = (value) => {
+  const num = Number(value || 0);
+  if (Number.isNaN(num)) return '-';
+  return num.toFixed(4);
+};
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  // 2026-01-18T15:21:45.459539 -> 2026-01-18 15:21:45
+  const [datePart, timePart] = String(value).split('T');
+  if (!timePart) return value;
+  const cleanTime = timePart.split('.')[0];
+  return `${datePart} ${cleanTime}`;
+};
 
 const loadFactors = async () => {
   if (!filters.userId) {
@@ -180,12 +152,12 @@ const loadFactors = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const response = await apiGet('/api/v1/user_factor_list', {
+    const response = await apiGet('http://localhost:8111/api/v1/user_factor_list', {
       user_id: filters.userId,
       page: filters.page,
       page_size: filters.pageSize,
       sort_field: filters.sortField,
-      sort_order: filters.sortOrder
+      sort_frder: filters.sortOrder
     });
     if (response?.code !== '200') {
       throw new Error(response?.message || '查询失败');
@@ -201,6 +173,10 @@ const loadFactors = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const goBack = () => {
+  router.push({ path: '/factorDeep' });
 };
 
 const goToEditor = (factorId) => {
@@ -400,6 +376,9 @@ select {
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .primary:disabled {
@@ -414,6 +393,9 @@ select {
   padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .table-card {
@@ -458,6 +440,9 @@ tbody tr:hover {
   padding: 6px 8px;
   border-radius: 6px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .row-actions button:hover {
@@ -482,6 +467,9 @@ tbody tr:hover {
   height: 36px;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .error {

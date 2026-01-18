@@ -1,11 +1,9 @@
 <template>
   <div class="app-shell">
-    <header class="app-header">
-      <h1>Panda Factor</h1>
-      <p>Vue 3 scaffold reconstructed from the bundled output.</p>
-    </header>
     <main class="app-main">
-      <router-view />
+      <div class="app-inner">
+        <router-view />
+      </div>
     </main>
   </div>
 </template>
@@ -15,8 +13,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f7f8fb;
-  color: #1f2a44;
+  background: #11131a;
+  color: #e5e9f2;
 }
 
 .app-header {
@@ -37,6 +35,14 @@
 
 .app-main {
   flex: 1;
-  padding: 24px 32px 48px;
+  padding: 32px 40px 48px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.app-inner {
+  width: 100%;
+  max-width: 1600px;
 }
 </style>
