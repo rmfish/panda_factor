@@ -62,11 +62,13 @@ export default function FactorList() {
         </Paragraph>
       </Space>
       <div className="card-grid">
-        {renderedFactors.map((factor) => (
-          <Card key={factor.factor_id} className="factor-card" shadow="hover">
+        {renderedFactors.map((factor) => {
+          const factorId = factor.factor_id || factor.id;
+          return (
+            <Card key={factorId} className="factor-card" shadow="hover">
             <Space vertical align="start" spacing="tight">
               <Space align="center">
-                <Title heading={5}>{factor.factor_name}</Title>
+                <Title heading={5}>{factor.factor_name || factor.name}</Title>
                 <Tag color="blue" type="solid">
                   {factor.name || '自定义'}
                 </Tag>
@@ -79,19 +81,20 @@ export default function FactorList() {
               </Space>
               <Space spacing="tight">
                 <Button theme="solid" type="primary">
-                  <Link to={`/workspace/${factor.factor_id}`} className="link-button">
+                  <Link to={`/workspace/${factorId}`} className="link-button">
                     进入工作台
                   </Link>
                 </Button>
                 <Button theme="borderless" type="primary">
-                  <Link to={`/detail/${factor.factor_id}`} className="link-button">
+                  <Link to={`/detail/${factorId}`} className="link-button">
                     查看详情
                   </Link>
                 </Button>
               </Space>
             </Space>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

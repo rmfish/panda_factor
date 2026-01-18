@@ -28,9 +28,9 @@ const navRoutes = {
 function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedKey = location.pathname.startsWith('/workspace')
-    ? 'workspace'
-    : 'list';
+  const isWorkspaceRoute = location.pathname.startsWith('/workspace');
+  const selectedKey = isWorkspaceRoute ? 'workspace' : 'list';
+  const workspaceRoute = isWorkspaceRoute ? location.pathname : navRoutes.workspace;
 
   return (
     <Layout className="app-shell">
@@ -45,7 +45,9 @@ function AppShell() {
           mode="horizontal"
           items={navItems}
           selectedKeys={[selectedKey]}
-          onSelect={({ itemKey }) => navigate(navRoutes[itemKey])}
+          onSelect={({ itemKey }) =>
+            navigate(itemKey === 'workspace' ? workspaceRoute : navRoutes[itemKey])
+          }
           className="app-nav"
         />
       </Header>

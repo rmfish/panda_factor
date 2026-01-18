@@ -33,17 +33,17 @@ const statusMap = {
 export default function FactorDetail() {
   const { factorId } = useParams();
   const [detail, setDetail] = useState(fallbackDetail);
+  const resolvedFactorId = factorId || 'alpha-001';
 
   useEffect(() => {
-    if (!factorId) return;
     const loadDetail = async () => {
-      const response = await getFactorDetail(factorId);
+      const response = await getFactorDetail(resolvedFactorId);
       if (response.ok && response.data?.data) {
         setDetail(response.data.data);
       }
     };
     loadDetail();
-  }, [factorId]);
+  }, [resolvedFactorId]);
 
   const status = useMemo(() => statusMap[detail.status] || statusMap[0], [detail.status]);
 
@@ -74,7 +74,7 @@ export default function FactorDetail() {
         </Paragraph>
         <Space spacing="tight">
           <Button theme="solid" type="primary">
-            <Link to={`/workspace/${factorId}`} className="link-button">
+            <Link to={`/workspace/${resolvedFactorId}`} className="link-button">
               打开工作台
             </Link>
           </Button>
